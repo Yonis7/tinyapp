@@ -40,10 +40,18 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL
   const key =  generateRandomString()
   urlDatabase[key] = longURL;
-  console.log(req.body); // Log the POST request body to the console
-  console.log('Updated urlDatabase-->', urlDatabase)
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  // console.log(req.body); // Log the POST request body to the console
+  // console.log('Updated urlDatabase-->', urlDatabase)
+  const templateVars = { urls: urlDatabase };
+  res.render("urls_index", templateVars);
 });
+
+app.post('/urls/:id/delete', (req, res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  const templateVars = { urls: urlDatabase };
+  res.render("urls_index", templateVars);
+})
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
