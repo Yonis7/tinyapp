@@ -2,7 +2,8 @@ const express = require("express");
 const app = express();
 const PORT = 3000; // default port 3000
 app.set("view engine", "ejs");
-
+app.use(express.json());
+app.use(express.urlencoded({extended: true}))
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -36,7 +37,11 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
+  const longURL = req.body.longURL
+  const key =  generateRandomString()
+  urlDatabase[key] = longURL;
   console.log(req.body); // Log the POST request body to the console
+  console.log('Updated urlDatabase-->', urlDatabase)
   res.send("Ok"); // Respond with 'Ok' (we will replace this)
 });
 
@@ -44,4 +49,6 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-function generateRandomString() {}
+function generateRandomString() {
+  return (Math.random() + 1).toString(36).substring(7)
+}
