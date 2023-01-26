@@ -53,9 +53,28 @@ app.post('/urls/:id/delete', (req, res) => {
   res.render("urls_index", templateVars);
 })
 
+
+app.get('/urls/:id/edit', (req, res) => {
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  res.render("urls_show", templateVars)
+})
+
+app.post('/urls/:id', (req, res) => {
+
+  // console.log('Route is /urls/:id')
+  // console.log(req.body);
+  // console.log(req.params);
+  const newLongUrl  = req.body.longURL
+  const shortUrl = req.params.id
+  urlDatabase[shortUrl] = newLongUrl;
+  res.redirect('/urls')
+})
+
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
 
 function generateRandomString() {
   return (Math.random() + 1).toString(36).substring(7)
