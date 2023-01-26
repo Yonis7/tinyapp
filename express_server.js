@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const PORT = 3000; // default port 3000
+const PORT = 8080; // default port 3000
 app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({extended: true}))
@@ -68,6 +68,12 @@ app.post('/urls/:id', (req, res) => {
   const shortUrl = req.params.id
   urlDatabase[shortUrl] = newLongUrl;
   res.redirect('/urls')
+});
+
+app.post('/login', (req, res) => {
+  const username = req.body.username
+  res.cookie("username", username);
+  res.redirect('/urls');
 })
 
 
