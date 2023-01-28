@@ -91,7 +91,19 @@ app.post('/urls/:id', (req, res) => {
 
 app.post('/login', (req, res) => {
   const username = req.body.username;
-  res.cookie("username", username);
+  let email = req.body.email;
+  let password = req.body.password;
+
+  let user = getUserByEmail(email)
+
+  if(!user) {
+    return res.status(403).send('Invalid username or password inputed')
+  }
+
+  if (password !== user.password) {
+    return res.status(403).send('Invalid username or password inputed')
+  }
+  res.cookie("user_id", user.id);
   //Res.cookie is an object that has key-value pair of { username: 'Client Username' }
   // console.log(req.cookies);
   res.redirect('/urls');
@@ -112,15 +124,7 @@ app.post('/register', (req, res) => {
   const email = req.body.email
   const password = req.body.password
   let randomUserID = generateRandomString();
-  const getUserByEmail = (email) => {
-
-    for (const userId in users) {
-
-      if(users[userId].email === email) {
-        return users[userId]
-      }
-    }
-  }
+  
   
   //If email or password feilds are empty
 
@@ -163,4 +167,14 @@ app.listen(PORT, () => {
 
 function generateRandomString() {
   return (Math.random() + 1).toString(36).substring(7)
+}
+
+const getUserByEmail = (email) => {
+
+  for (const userId in users) {
+
+    if(users[userId].email === email) {
+      return users[userId]
+    }
+  }
 }
