@@ -109,9 +109,30 @@ res.render('urls_registration')
 });
 
 app.post('/register', (req, res) => {
-
+  const email = req.body.email
+  const password = req.body.password
   let randomUserID = generateRandomString();
+  const getUserByEmail = (email) => {
+
+    for (const userId in users) {
+
+      if(users[userId].email === email) {
+        return users[userId]
+      }
+    }
+  }
   
+  //If email or password feilds are empty
+
+  if (!email || !password) {
+    return res.status(400).send({error: 'Please fill out Email or password.'});
+  }
+
+  //If Email already exsists.
+  const existingUser = getUserByEmail(email)
+  if(existingUser) {
+    return res.status(400).send({error: 'This email already exsists'});
+  }
   //create new user object with the user's id, email and password
   let newUser = {
     id: randomUserID,
@@ -126,7 +147,14 @@ app.post('/register', (req, res) => {
   
 
   res.redirect('/urls');
+
+  
+
 });
+
+app.get('/login', (req, res) => {
+  res.render('urls_login');
+})
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
