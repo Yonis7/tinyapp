@@ -1,12 +1,24 @@
 const express = require("express");
 const app = express();
 const cookieParser = require('cookie-parser')
-const PORT = 8080; // default port 3000
+const PORT = 3000; // default port 3000
 app.set("view engine", "ejs");
 app.use(cookieParser())
 app.use(express.json());
 app.use(express.urlencoded({extended: true}))
 
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -26,8 +38,12 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"]};
+
+  const user = users[req.cookies['user_id']]
+
+  const templateVars = { urls: urlDatabase, user: user};
   res.render("urls_index", templateVars);
+ 
 })
 
 app.get("/urls/new", (req, res) => {
@@ -87,7 +103,30 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls')
 })
 
+//When regisgter is clicked
+app.get('/register', (req, res) => {
+res.render('urls_registration')
+});
 
+app.post('/register', (req, res) => {
+
+  let randomUserID = generateRandomString();
+  
+  //create new user object with the user's id, email and password
+  let newUser = {
+    id: randomUserID,
+    email: req.body.email,
+    password: req.body.password
+  };
+  //add the new user object to the global users object
+  users[randomUserID] = newUser;
+  
+  //set a user_id cookie containing the user's newly generated ID
+  res.cookie("user_id", randomUserID);
+  
+
+  res.redirect('/urls');
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
