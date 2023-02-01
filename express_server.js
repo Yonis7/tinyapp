@@ -15,6 +15,8 @@ app.use(
     cookie: { secure: true },
   })
 );
+const bcrypt = require("bcryptjs");
+
 
 const users = {
   userRandomID: {
@@ -28,6 +30,18 @@ const users = {
     password: "dishwasher-funk",
   },
 };
+
+const getUserByEmail = (email) => {
+  for (const userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+};
+
+function generateRandomString() {
+  return (Math.random() + 1).toString(36).substring(7);
+}
 
 // const urlDatabase = {
 
@@ -179,15 +193,23 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
-
+  const hashedPassword = bcrypt.hashSync(password, 10); 
   let user = getUserByEmail(email);
+  console.log(user);
 
   if (!user) {
     return res.status(403).send("Invalid username or password inputed");
+    // res.send('Not a user')
   }
 
-  if (password !== user.password) {
-    return res.status(403).send("Invalid username or password inputed");
+  // if (password !== user.password) {
+  //   return res.status(403).send("Invalid username or password inputed");
+  // }
+  //Check if passwords match
+  const isPasswordCorrect = bcrypt.compareSync(password, user.password);
+  console.log(isPasswordCorrect);
+  if (!isPasswordCorrect) {
+    return res.status(403).send({ error: "Invalid username or password inputed" });
   }
   res.cookie("user_id", user.id);
   //Res.cookie is an object that has key-value pair of { username: 'Client Username' }
@@ -215,6 +237,8 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   let randomUserID = generateRandomString();
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  console.log(hashedPassword)
 
   //If email or password feilds are empty
 
@@ -230,6 +254,7 @@ app.post("/register", (req, res) => {
   if (existingUser) {
     return res.status(400).send({ error: "This email already exsists" });
   }
+  
   //create new user object with the user's id, email and password
   let newUser = {
     id: randomUserID,
@@ -258,14 +283,6 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-function generateRandomString() {
-  return (Math.random() + 1).toString(36).substring(7);
-}
 
-const getUserByEmail = (email) => {
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
-    }
-  }
-};
+
+
