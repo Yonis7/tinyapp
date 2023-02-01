@@ -29,9 +29,33 @@ const users = {
   },
 };
 
+// const urlDatabase = {
+
+//   b2xVn2: "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com",
+// };
+
+const urlsForUser = (userId) => {
+  let newObj = {};
+
+  for (shortUrl in urlDatabase) {
+    if (userId === urlDatabase[shortUrl].userID) {
+      
+      newObj[shortUrl] = urlDatabase[shortUrl];
+    }
+  }
+  return newObj;
+};
+
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 app.get("/", (req, res) => {
@@ -48,14 +72,16 @@ app.get("/hello", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const user = users[req.cookies["user_id"]];
-  const templateVars = { urls: urlDatabase, user: user};
-  console.log(`Cookies ${req.cookies["user_id"]}`)
-  console.log(`User id if signed in: ${req.session.user_id}`)
 
-  if (req.cookies["user_id"]) {
+  console.log(req.cookies["user_id"]);
+  const templateVars = { urls: urlDatabase, user: user };
+  console.log(`Cookies ${req.cookies["user_id"]}`);
+  console.log(`User id if signed in: ${req.session.user_id}`);
+
+  if (user) {
     res.render("urls_index", templateVars);
   } else {
-    res.status(401).send(`Login to create a new URL`)
+    res.status(401).send(`Login to create a new URL`);
   }
 });
 
@@ -66,33 +92,48 @@ app.get("/urls/new", (req, res) => {
   if (req.cookies["user_id"]) {
     res.render("urls_new", templateVars);
   } else {
-    res.redirect('/login');
+    res.redirect("/login");
   }
 });
 
 app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: users[req.cookies["user_id"]]
+    longURL: urlDatabase[req.params.id].longURL,
+    user: users[req.cookies["user_id"]],
   };
-
   const url = urlDatabase[req.params.id];
-  if (!url) {
+  const userURLS = urlsForUser(templateVars.user.id);
+
+  if (!templateVars.user) {
+    res.status(404).send("Please log in");
+  
+  } else if(!url ) {
     res.status(404).send("URL not found");
+  
+  } else if (!userURLS[req.params.id]) {
+    res.status(404).send("Unable to access this URL");
+  
   } else {
     res.render("urls_show", templateVars);
   }
+    
 });
 
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
+  const userIdValue = req.cookies["user_id"];
   const key = generateRandomString();
-  urlDatabase[key] = longURL;
+  urlDatabase[key] = {
+    longURL,
+    userID: userIdValue,
+  };
   // console.log(req.body); // Log the POST request body to the console
   // console.log('Updated urlDatabase-->', urlDatabase)
-  const templateVars = { urls: urlDatabase, 
-    user: users[req.cookies["user_id"]]};
+  const templateVars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
 
   res.render("urls_index", templateVars);
 });
@@ -100,16 +141,22 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
   delete urlDatabase[id];
-  const templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
-  
+  const templateVars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/:id/edit", (req, res) => {
+  const longURL = urlDatabase[req.params.id].longURL;
+  const id = req.params.id;
+  const user = users[req.cookies["user_id"]];
   const templateVars = {
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: users[req.cookies["user_id"]]
+    id,
+    longURL,
+    user,
   };
   res.render("urls_show", templateVars);
 });
@@ -120,11 +167,11 @@ app.post("/urls/:id", (req, res) => {
   // console.log(req.params);
   const newLongUrl = req.body.longURL;
   const shortUrl = req.params.id;
-  newLongUrl = urlDatabase[shortUrl];
 
-  if (!url) {
+  if (!urlDatabase[shortUrl]) {
     res.status(404).send("URL not found");
   } else {
+    urlDatabase[shortUrl].longURL = newLongUrl;
     res.redirect("/urls");
   }
 });
@@ -156,7 +203,8 @@ app.post("/logout", (req, res) => {
 
 //When regisgter is clicked
 app.get("/register", (req, res) => {
-  if (req.cookies["user_id"]) {
+  const user = users[req.cookies["user_id"]];
+  if (user) {
     res.redirect("/urls");
   } else {
     res.render("urls_registration");
@@ -178,7 +226,7 @@ app.post("/register", (req, res) => {
 
   //If Email already exsists.
   const existingUser = getUserByEmail(email);
-  
+
   if (existingUser) {
     return res.status(400).send({ error: "This email already exsists" });
   }
@@ -198,7 +246,8 @@ app.post("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  if (req.cookies["user_id"]) {
+  const user = users[req.cookies["user_id"]];
+  if (user) {
     res.redirect("/urls");
   } else {
     res.render("urls_login");
