@@ -1,21 +1,20 @@
 const express = require("express");
 var session = require("express-session");
 const app = express();
-const cookieParser = require("cookie-parser");
+const cookieSession = require('cookie-session')
+const bcrypt = require("bcryptjs");
 const PORT = 8080; // default port 3000
 app.set("view engine", "ejs");
-app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  session({
-    secret: "keyboard cat",
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: true },
-  })
-);
-const bcrypt = require("bcryptjs");
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2', 'key3'],
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
 
 
 const users = {
@@ -85,11 +84,11 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session.user_id];
 
-  console.log(req.cookies["user_id"]);
+  console.log(req.session.user_id);
   const templateVars = { urls: urlDatabase, user: user };
-  console.log(`Cookies ${req.cookies["user_id"]}`);
+  console.log(`Cookies ${req.session.user_id}`);
   console.log(`User id if signed in: ${req.session.user_id}`);
 
   if (user) {
@@ -100,10 +99,10 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session.user_id];
   const templateVars = { urls: urlDatabase, user: user };
 
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.render("urls_new", templateVars);
   } else {
     res.redirect("/login");
@@ -114,7 +113,7 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
-    user: users[req.cookies["user_id"]],
+    user: users[req.session.user_id],
   };
   const url = urlDatabase[req.params.id];
   const userURLS = urlsForUser(templateVars.user.id);
@@ -136,7 +135,7 @@ app.get("/urls/:id", (req, res) => {
 
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
-  const userIdValue = req.cookies["user_id"];
+  const userIdValue = req.session.user_id;
   const key = generateRandomString();
   urlDatabase[key] = {
     longURL,
@@ -146,7 +145,7 @@ app.post("/urls", (req, res) => {
   // console.log('Updated urlDatabase-->', urlDatabase)
   const templateVars = {
     urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
+    user: users[req.session.user_id],
   };
 
   res.render("urls_index", templateVars);
@@ -157,7 +156,7 @@ app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[id];
   const templateVars = {
     urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
+    user: users[req.session.user_id],
   };
 
   res.render("urls_index", templateVars);
@@ -166,7 +165,7 @@ app.post("/urls/:id/delete", (req, res) => {
 app.get("/urls/:id/edit", (req, res) => {
   const longURL = urlDatabase[req.params.id].longURL;
   const id = req.params.id;
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session.user_id];
   const templateVars = {
     id,
     longURL,
@@ -211,7 +210,8 @@ app.post("/login", (req, res) => {
   if (!isPasswordCorrect) {
     return res.status(403).send({ error: "Invalid username or password inputed" });
   }
-  res.cookie("user_id", user.id);
+  req.session.user_id = user.id;
+
   //Res.cookie is an object that has key-value pair of { username: 'Client Username' }
   // console.log(req.cookies);
   res.redirect("/urls");
@@ -225,7 +225,7 @@ app.post("/logout", (req, res) => {
 
 //When regisgter is clicked
 app.get("/register", (req, res) => {
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session.user_id];
   if (user) {
     res.redirect("/urls");
   } else {
@@ -265,13 +265,14 @@ app.post("/register", (req, res) => {
   users[randomUserID] = newUser;
 
   //set a user_id cookie containing the user's newly generated ID
-  res.cookie("user_id", randomUserID);
+  req.session.user_id = randomUserID;
+
 
   res.redirect("/urls");
 });
 
 app.get("/login", (req, res) => {
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session.user_id];
   if (user) {
     res.redirect("/urls");
   } else {
