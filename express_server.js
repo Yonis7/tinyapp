@@ -3,6 +3,7 @@ var session = require("express-session");
 const app = express();
 const cookieSession = require('cookie-session')
 const bcrypt = require("bcryptjs");
+const getUserByEmail = require('./helpers.js')
 const PORT = 8080; // default port 3000
 app.set("view engine", "ejs");
 app.use(express.json());
@@ -30,13 +31,6 @@ const users = {
   },
 };
 
-const getUserByEmail = (email) => {
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
-    }
-  }
-};
 
 function generateRandomString() {
   return (Math.random() + 1).toString(36).substring(7);
@@ -193,7 +187,7 @@ app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10); 
-  let user = getUserByEmail(email);
+  let user = getUserByEmail(email, users);
   console.log(user);
 
   if (!user) {
@@ -249,7 +243,7 @@ app.post("/register", (req, res) => {
   }
 
   //If Email already exsists.
-  const existingUser = getUserByEmail(email);
+  const existingUser = getUserByEmail(email, users);
 
   if (existingUser) {
     return res.status(400).send({ error: "This email already exsists" });
