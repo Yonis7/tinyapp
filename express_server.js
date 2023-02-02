@@ -1,22 +1,24 @@
 const express = require("express");
 var session = require("express-session");
 const app = express();
-const cookieSession = require('cookie-session')
+const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
-const getUserByEmail = require('./helpers.js')
+const {getUserByEmail} = require("./helpers");
+console.log(getUserByEmail)
 const PORT = 8080; // default port 3000
 app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cookieSession({
-  name: 'session',
-  keys: ['key1', 'key2', 'key3'],
+app.use(
+  cookieSession({
+    name: "session",
+    keys: ["key1", "key2", "key3"],
 
-  // Cookie Options
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}))
-
+    // Cookie Options
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  })
+);
 
 const users = {
   userRandomID: {
@@ -30,7 +32,6 @@ const users = {
     password: "dishwasher-funk",
   },
 };
-
 
 function generateRandomString() {
   return (Math.random() + 1).toString(36).substring(7);
@@ -47,7 +48,6 @@ const urlsForUser = (userId) => {
 
   for (shortUrl in urlDatabase) {
     if (userId === urlDatabase[shortUrl].userID) {
-      
       newObj[shortUrl] = urlDatabase[shortUrl];
     }
   }
@@ -114,17 +114,13 @@ app.get("/urls/:id", (req, res) => {
 
   if (!templateVars.user) {
     res.status(404).send("Please log in");
-  
-  } else if(!url ) {
+  } else if (!url) {
     res.status(404).send("URL not found");
-  
   } else if (!userURLS[req.params.id]) {
     res.status(404).send("Unable to access this URL");
-  
   } else {
     res.render("urls_show", templateVars);
   }
-    
 });
 
 app.post("/urls", (req, res) => {
@@ -186,7 +182,7 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10); 
+  const hashedPassword = bcrypt.hashSync(password, 10);
   let user = getUserByEmail(email, users);
   console.log(user);
 
@@ -202,9 +198,11 @@ app.post("/login", (req, res) => {
   const isPasswordCorrect = bcrypt.compareSync(password, user.password);
   console.log(isPasswordCorrect);
   if (!isPasswordCorrect) {
-    return res.status(403).send({ error: "Invalid username or password inputed" });
+    return res
+      .status(403)
+      .send({ error: "Invalid username or password inputed" });
   }
-  req.session.user_id = user.id;
+  user.id = req.session.user_id;
 
   //Res.cookie is an object that has key-value pair of { username: 'Client Username' }
   // console.log(req.cookies);
@@ -232,7 +230,7 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
   let randomUserID = generateRandomString();
   const hashedPassword = bcrypt.hashSync(password, 10);
-  console.log(hashedPassword)
+  console.log(hashedPassword);
 
   //If email or password feilds are empty
 
@@ -243,12 +241,12 @@ app.post("/register", (req, res) => {
   }
 
   //If Email already exsists.
-  const existingUser = getUserByEmail(email, users);
+  const existingUser = getUserByEmail(email, users)
 
   if (existingUser) {
     return res.status(400).send({ error: "This email already exsists" });
   }
-  
+
   //create new user object with the user's id, email and password
   let newUser = {
     id: randomUserID,
@@ -260,7 +258,6 @@ app.post("/register", (req, res) => {
 
   //set a user_id cookie containing the user's newly generated ID
   req.session.user_id = randomUserID;
-
 
   res.redirect("/urls");
 });
@@ -277,7 +274,3 @@ app.get("/login", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-
-
-
