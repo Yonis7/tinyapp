@@ -22,6 +22,7 @@ const emailExist = function (users, email) {
   return false;
 };
 
+const bcrypt = require('bcryptjs')
 const hashPassword = function (password) {
   return bcrypt.hashSync(password, 10);
 };
